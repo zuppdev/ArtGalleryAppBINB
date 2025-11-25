@@ -29,9 +29,42 @@
 		259345CE2ED5816100320843 /* ArtGalleryAppBINBUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArtGalleryAppBINBUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		2593461F2ED5891B00320843 /* Exceptions for "ArtGalleryAppBINB" folder in "ArtGalleryAppBINB" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				App/AppDelegate.swift,
+				App/SceneDelegate.swift,
+				"Common/Extensions/UIImageView+Extension.swift",
+				Common/Utilities/ImageCache.swift,
+				Common/Utilities/ImageDownloader.swift,
+				Data/DTOs/ArtworkDTO.swift,
+				Data/Network/APIClient.swift,
+				Data/Network/Endpoint.swift,
+				Data/Network/NetworkError.swift,
+				Data/Repositories/ArtworkRepository.swift,
+				Domain/Models/Artwork.swift,
+				Domain/Models/PaginatedResponse.swift,
+				Domain/Repositories/ArtworkRepositoryProtocol.swift,
+				Presentation/ArtworkDetail/ArtworkDetailViewController.swift,
+				Presentation/ArtworkDetail/ArtworkDetailViewModel.swift,
+				Presentation/ArtworkDetail/Cells/RelatedArtworkCell.swift,
+				Presentation/ArtworkList/ArtworkListViewController.swift,
+				Presentation/ArtworkList/ArtworkListViewModel.swift,
+				Presentation/ArtworkList/Cells/ArtworkCell.swift,
+				Presentation/ArtworkList/FilterViewController.swift,
+				Presentation/FullscreenImage/FullscreenImageViewController.swift,
+			);
+			target = 259345B62ED5816000320843 /* ArtGalleryAppBINB */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		259345B92ED5816000320843 /* ArtGalleryAppBINB */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				2593461F2ED5891B00320843 /* Exceptions for "ArtGalleryAppBINB" folder in "ArtGalleryAppBINB" target */,
+			);
 			path = ArtGalleryAppBINB;
 			sourceTree = "<group>";
 		};
