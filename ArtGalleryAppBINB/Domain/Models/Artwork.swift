@@ -1,48 +1,35 @@
-//
-//  Artwork.swift
-//  ArtGallery
-//
-//  Domain Model for Artwork
-//
-
 import Foundation
 
-struct Artwork: Identifiable, Equatable {
+struct Artwork: Equatable {
     let id: Int
     let title: String
     let artistDisplay: String?
     let dateDisplay: String?
     let dateStart: Int?
     let dateEnd: Int?
-    let mediumDisplay: String?
-    let dimensions: String?
-    let creditLine: String?
-    let departmentTitle: String?
-    let artworkTypeTitle: String?
-    let imageId: String?
-    let description: String?
     let placeOfOrigin: String?
-    
-    var imageURL: URL? {
+    let dimensions: String?
+    let mediumDisplay: String?
+    let creditLine: String?
+    let imageId: String?
+    let artistId: Int?
+    let artistTitle: String?
+    let artworkTypeTitle: String?
+    let departmentTitle: String?
+    let categoryTitles: [String]?
+
+    var imageUrl: String? {
         guard let imageId = imageId else { return nil }
-        return URL(string: "https://www.artic.edu/iiif/2/\(imageId)/full/843,/0/default.jpg")
+        return "https://www.artic.edu/iiif/2/\(imageId)/full/843,/0/default.jpg"
     }
-    
-    var highResImageURL: URL? {
+
+    var thumbnailUrl: String? {
         guard let imageId = imageId else { return nil }
-        return URL(string: "https://www.artic.edu/iiif/2/\(imageId)/full/full/0/default.jpg")
+        return "https://www.artic.edu/iiif/2/\(imageId)/full/200,/0/default.jpg"
     }
-    
-    var thumbnailURL: URL? {
+
+    var fullImageUrl: String? {
         guard let imageId = imageId else { return nil }
-        return URL(string: "https://www.artic.edu/iiif/2/\(imageId)/full/400,/0/default.jpg")
-    }
-    
-    var artistName: String {
-        artistDisplay?.components(separatedBy: "\n").first ?? "Unknown Artist"
-    }
-    
-    var yearDisplay: String {
-        dateDisplay ?? "Unknown Date"
+        return "https://www.artic.edu/iiif/2/\(imageId)/full/full/0/default.jpg"
     }
 }

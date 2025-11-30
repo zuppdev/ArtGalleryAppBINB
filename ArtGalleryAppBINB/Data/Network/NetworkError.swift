@@ -1,50 +1,27 @@
-//
-//  NetworkError.swift
-//  ArtGallery
-//
-//  Network error definitions
-//
-
 import Foundation
 
 enum NetworkError: LocalizedError {
     case invalidURL
     case noData
-    case decodingError
-    case serverError(Int)
-    case noInternetConnection
-    case timeout
-    case unknown(Error)
-    
+    case decodingError(Error)
+    case serverError(statusCode: Int)
+    case networkFailure(Error)
+    case unknown
+
     var errorDescription: String? {
         switch self {
         case .invalidURL:
             return "Invalid URL"
         case .noData:
             return "No data received from server"
-        case .decodingError:
-            return "Failed to process server response"
-        case .serverError(let code):
-            return "Server error (\(code))"
-        case .noInternetConnection:
-            return "No internet connection. Please check your connection."
-        case .timeout:
-            return "Request timed out. Please try again."
-        case .unknown(let error):
-            return error.localizedDescription
-        }
-    }
-    
-    var recoverySuggestion: String? {
-        switch self {
-        case .noInternetConnection:
-            return "Check your internet connection and try again."
-        case .timeout:
-            return "The request took too long. Please try again."
-        case .serverError:
-            return "Please try again later."
-        default:
-            return "Please try again."
+        case .decodingError(let error):
+            return "Failed to decode response: \(error.localizedDescription)"
+        case .serverError(let statusCode):
+            return "Server error with status code: \(statusCode)"
+        case .networkFailure(let error):
+            return "Network error: \(error.localizedDescription)"
+        case .unknown:
+            return "An unknown error occurred"
         }
     }
 }

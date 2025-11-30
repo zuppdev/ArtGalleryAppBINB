@@ -1,201 +1,150 @@
-//
-//  ArtworkListViewModel.swift
-//  ArtGallery
-//
-//  ViewModel for artwork list screen
-//
-
 import Foundation
 
 @MainActor
-final class ArtworkListViewModel: ObservableObject {
-    // MARK: - Published Properties
+class ArtworkListViewModel: ObservableObject {
     @Published var artworks: [Artwork] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
-    @Published var hasMorePages = true
-    @Published var searchQuery = ""
-    @Published var isSearching = false
-    @Published var selectedYearRange: ClosedRange<Int>?
-    @Published var isFilterActive = false
-    
-    // MARK: - Private Properties
+    @Published var searchText = ""
+    @Published var filterStartYear: Int?
+    @Published var filterEndYear: Int?
+
     private let repository: ArtworkRepositoryProtocol
     private var currentPage = 1
-    private let pageSize = 30
-    private var searchTask: Task<Void, Never>?
-    private var allArtworks: [Artwork] = [] // Store all artworks for filtering
-    
-    // MARK: - Initialization
-    init(repository: ArtworkRepositoryProtocol = ArtworkRepository()) {
+    private let pageLimit = 20
+    private var canLoadMore = true
+    private var isSearchActive = false
+    private var isFilterActive = false
+
+    init(repository: ArtworkRepositoryProtocol) {
         self.repository = repository
     }
-    
-    // MARK: - Public Methods
+
     func loadArtworks() {
-        guard !isLoading, hasMorePages, searchQuery.isEmpty else { return }
-        
+        guard !isLoading else { return }
+
         Task {
             isLoading = true
             errorMessage = nil
-            
+
             do {
-                let response = try await repository.fetchArtworks(page: currentPage, limit: pageSize)
-                
-                if currentPage == 1 {
-                    artworks = response.data
-                    allArtworks = response.data
-                } else {
-                    artworks.append(contentsOf: response.data)
-                    allArtworks.append(contentsOf: response.data)
-                }
-                
-                currentPage += 1
-                hasMorePages = response.pagination.currentPage < response.pagination.totalPages
-                
-            } catch {
-                handleError(error)
-            }
-            
-            isLoading = false
-        }
-    }
-    
-    func searchArtworks(_ query: String) {
-        searchQuery = query
-        
-        // Cancel previous search task
-        searchTask?.cancel()
-        
-        guard !query.isEmpty else {
-            // Reset to normal list
-            isSearching = false
-            resetPagination()
-            loadArtworks()
-            return
-        }
-        
-        // Debounce search
-        searchTask = Task {
-            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-            
-            guard !Task.isCancelled else { return }
-            
-            isSearching = true
-            isLoading = true
-            errorMessage = nil
-            currentPage = 1
-            
-            do {
-                let response = try await repository.searchArtworks(query: query, page: 1, limit: pageSize)
-                
-                guard !Task.isCancelled else { return }
-                
+                let response = try await repository.fetchArtworks(page: 1, limit: pageLimit)
                 artworks = response.data
-                hasMorePages = response.pagination.currentPage < response.pagination.totalPages
-                
-                if artworks.isEmpty {
-                    errorMessage = "No artworks found matching '\(query)'"
-                }
-                
+                currentPage = 1
+                canLoadMore = response.pagination.hasNextPage
             } catch {
-                handleError(error)
+                errorMessage = handleError(error)
             }
-            
+
             isLoading = false
         }
     }
-    
-    func filterByYearRange(_ range: ClosedRange<Int>) {
-        selectedYearRange = range
-        isFilterActive = true
-        
-        // Filter artworks
-        if searchQuery.isEmpty {
-            artworks = allArtworks.filter { artwork in
-                if let dateStart = artwork.dateStart {
-                    return range.contains(dateStart)
-                }
-                return false
-            }
-        }
-        
-        if artworks.isEmpty {
-            errorMessage = "No artworks found in years \(range.lowerBound)-\(range.upperBound)"
-        }
-    }
-    
-    func clearFilter() {
-        selectedYearRange = nil
-        isFilterActive = false
-        artworks = allArtworks
-        errorMessage = nil
-    }
-    
-    func refresh() {
-        resetPagination()
-        searchQuery = ""
-        isSearching = false
-        selectedYearRange = nil
-        isFilterActive = false
-        loadArtworks()
-    }
-    
-    func loadMoreIfNeeded(currentItem: Artwork) {
-        guard let index = artworks.firstIndex(where: { $0.id == currentItem.id }) else {
-            return
-        }
-        
-        let thresholdIndex = artworks.count - 5
-        if index >= thresholdIndex && !isLoading && hasMorePages {
-            if isSearching {
-                loadMoreSearchResults()
-            } else {
-                loadArtworks()
-            }
-        }
-    }
-    
-    // MARK: - Private Methods
-    private func resetPagination() {
-        currentPage = 1
-        hasMorePages = true
-        artworks = []
-        allArtworks = []
-        errorMessage = nil
-    }
-    
-    private func loadMoreSearchResults() {
-        guard !isLoading, hasMorePages, !searchQuery.isEmpty else { return }
-        
+
+    func loadMore() {
+        guard !isLoading, canLoadMore else { return }
+
         Task {
             isLoading = true
             errorMessage = nil
-            
+
             do {
-                let response = try await repository.searchArtworks(
-                    query: searchQuery,
-                    page: currentPage + 1,
-                    limit: pageSize
-                )
-                
+                let nextPage = currentPage + 1
+                let response: PaginatedResponse<Artwork>
+
+                if isSearchActive {
+                    response = try await repository.searchArtworks(query: searchText, page: nextPage, limit: pageLimit)
+                } else if isFilterActive {
+                    response = try await repository.filterArtworksByYear(startYear: filterStartYear, endYear: filterEndYear, page: nextPage, limit: pageLimit)
+                } else {
+                    response = try await repository.fetchArtworks(page: nextPage, limit: pageLimit)
+                }
+
                 artworks.append(contentsOf: response.data)
-                currentPage += 1
-                hasMorePages = response.pagination.currentPage < response.pagination.totalPages
-                
+                currentPage = nextPage
+                canLoadMore = response.pagination.hasNextPage
             } catch {
-                handleError(error)
+                errorMessage = handleError(error)
             }
-            
+
             isLoading = false
         }
     }
-    
-    private func handleError(_ error: Error) {
-        if let networkError = error as? NetworkError {
-            errorMessage = networkError.errorDescription
-        } else {
-            errorMessage = "Something went wrong. Please try again."
+
+    func searchArtworks() {
+        guard !searchText.isEmpty else {
+            clearSearch()
+            return
         }
+
+        Task {
+            isLoading = true
+            errorMessage = nil
+            isSearchActive = true
+            isFilterActive = false
+
+            do {
+                let response = try await repository.searchArtworks(query: searchText, page: 1, limit: pageLimit)
+                artworks = response.data
+                currentPage = 1
+                canLoadMore = response.pagination.hasNextPage
+            } catch {
+                errorMessage = handleError(error)
+            }
+
+            isLoading = false
+        }
+    }
+
+    func clearSearch() {
+        searchText = ""
+        isSearchActive = false
+        if !isFilterActive {
+            loadArtworks()
+        }
+    }
+
+    func applyYearFilter(startYear: Int?, endYear: Int?) {
+        self.filterStartYear = startYear
+        self.filterEndYear = endYear
+
+        guard startYear != nil || endYear != nil else {
+            clearFilter()
+            return
+        }
+
+        Task {
+            isLoading = true
+            errorMessage = nil
+            isFilterActive = true
+            isSearchActive = false
+            searchText = ""
+
+            do {
+                let response = try await repository.filterArtworksByYear(startYear: startYear, endYear: endYear, page: 1, limit: pageLimit)
+                artworks = response.data
+                currentPage = 1
+                canLoadMore = response.pagination.hasNextPage
+            } catch {
+                errorMessage = handleError(error)
+            }
+
+            isLoading = false
+        }
+    }
+
+    func clearFilter() {
+        filterStartYear = nil
+        filterEndYear = nil
+        isFilterActive = false
+        if !isSearchActive {
+            loadArtworks()
+        }
+    }
+
+    private func handleError(_ error: Error) -> String {
+        if let networkError = error as? NetworkError {
+            return networkError.errorDescription ?? "An error occurred"
+        }
+        return error.localizedDescription
     }
 }

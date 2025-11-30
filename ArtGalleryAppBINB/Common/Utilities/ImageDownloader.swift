@@ -1,68 +1,51 @@
-//
-//  ImageDownloader.swift
-//  ArtGallery
-//
-//  Image downloading utility with caching
-//
-
 import UIKit
 
-final class ImageDownloader {
+actor ImageDownloader {
     static let shared = ImageDownloader()
-    
-    private let cache = ImageCache.shared
-    private var activeTasks: [String: Task<UIImage?, Never>] = [:]
-    private let session: URLSession
-    
-    private init() {
-        let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 30
-        self.session = URLSession(configuration: configuration)
-    }
-    
-    @MainActor
-    func downloadImage(from url: URL) async -> UIImage? {
-        let cacheKey = url.absoluteString
-        
-        // Check cache first
-        if let cachedImage = cache.getImage(forKey: cacheKey) {
+
+    private var ongoingDownloads: [String: Task<UIImage?, Error>] = [:]
+
+    private init() {}
+
+    func downloadImage(from urlString: String) async throws -> UIImage? {
+        if let cachedImage = ImageCache.shared.getImage(forKey: urlString) {
             return cachedImage
         }
-        
-        // Check if there's already an active task for this URL
-        if let existingTask = activeTasks[cacheKey] {
-            return await existingTask.value
+
+        if let ongoingTask = ongoingDownloads[urlString] {
+            return try await ongoingTask.value
         }
-        
-        // Create new download task
-        let task = Task<UIImage?, Never> { @MainActor in
-            do {
-                let (data, _) = try await session.data(from: url)
-                
-                guard let image = UIImage(data: data) else {
-                    activeTasks.removeValue(forKey: cacheKey)
-                    return nil
-                }
-                
-                // Cache the image
-                cache.setImage(image, forKey: cacheKey)
-                activeTasks.removeValue(forKey: cacheKey)
-                
-                return image
-            } catch {
-                print("Image download failed: \(error.localizedDescription)")
-                activeTasks.removeValue(forKey: cacheKey)
-                return nil
+
+        let task = Task<UIImage?, Error> {
+            guard let url = URL(string: urlString) else {
+                throw NetworkError.invalidURL
             }
+
+            let (data, response) = try await URLSession.shared.data(from: url)
+
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                throw NetworkError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 0)
+            }
+
+            guard let image = UIImage(data: data) else {
+                throw NetworkError.noData
+            }
+
+            ImageCache.shared.setImage(image, forKey: urlString)
+            return image
         }
-        
-        activeTasks[cacheKey] = task
-        return await task.value
+
+        ongoingDownloads[urlString] = task
+
+        defer {
+            Task { await removeOngoingDownload(for: urlString) }
+        }
+
+        return try await task.value
     }
-    
-    func cancelDownload(for url: URL) {
-        let cacheKey = url.absoluteString
-        activeTasks[cacheKey]?.cancel()
-        activeTasks.removeValue(forKey: cacheKey)
+
+    private func removeOngoingDownload(for url: String) {
+        ongoingDownloads.removeValue(forKey: url)
     }
 }

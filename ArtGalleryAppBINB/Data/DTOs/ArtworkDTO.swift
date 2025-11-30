@@ -1,78 +1,66 @@
-//
-//  ArtworkDTO.swift
-//  ArtGallery
-//
-//  Data Transfer Objects for API responses
-//
-
 import Foundation
 
-// MARK: - API Response Wrappers
-struct ArtworkListResponse: Codable {
-    let pagination: Pagination
-    let data: [ArtworkDTO]
-}
-
-struct ArtworkDetailResponse: Codable {
+struct ArtworkResponseDTO: Decodable {
     let data: ArtworkDTO
 }
 
-struct ArtworkSearchResponse: Codable {
-    let pagination: Pagination
+struct ArtworkListResponseDTO: Decodable {
     let data: [ArtworkDTO]
+    let pagination: PaginationDTO
 }
 
-// MARK: - Artwork DTO
-struct ArtworkDTO: Codable {
+struct ArtworkDTO: Decodable {
     let id: Int
-    let title: String
+    let title: String?
     let artistDisplay: String?
     let dateDisplay: String?
     let dateStart: Int?
     let dateEnd: Int?
-    let mediumDisplay: String?
-    let dimensions: String?
-    let creditLine: String?
-    let departmentTitle: String?
-    let artworkTypeTitle: String?
-    let imageId: String?
-    let description: String?
     let placeOfOrigin: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case id
-        case title
-        case artistDisplay = "artist_display"
-        case dateDisplay = "date_display"
-        case dateStart = "date_start"
-        case dateEnd = "date_end"
-        case mediumDisplay = "medium_display"
-        case dimensions
-        case creditLine = "credit_line"
-        case departmentTitle = "department_title"
-        case artworkTypeTitle = "artwork_type_title"
-        case imageId = "image_id"
-        case description
-        case placeOfOrigin = "place_of_origin"
-    }
-    
-    // Convert DTO to Domain Model
+    let dimensions: String?
+    let mediumDisplay: String?
+    let creditLine: String?
+    let imageId: String?
+    let artistId: Int?
+    let artistTitle: String?
+    let artworkTypeTitle: String?
+    let departmentTitle: String?
+    let categoryTitles: [String]?
+
     func toDomain() -> Artwork {
-        Artwork(
+        return Artwork(
             id: id,
-            title: title,
+            title: title ?? "Untitled",
             artistDisplay: artistDisplay,
             dateDisplay: dateDisplay,
             dateStart: dateStart,
             dateEnd: dateEnd,
-            mediumDisplay: mediumDisplay,
+            placeOfOrigin: placeOfOrigin,
             dimensions: dimensions,
+            mediumDisplay: mediumDisplay,
             creditLine: creditLine,
-            departmentTitle: departmentTitle,
-            artworkTypeTitle: artworkTypeTitle,
             imageId: imageId,
-            description: description,
-            placeOfOrigin: placeOfOrigin
+            artistId: artistId,
+            artistTitle: artistTitle,
+            artworkTypeTitle: artworkTypeTitle,
+            departmentTitle: departmentTitle,
+            categoryTitles: categoryTitles
+        )
+    }
+}
+
+struct PaginationDTO: Decodable {
+    let total: Int
+    let limit: Int
+    let currentPage: Int
+    let totalPages: Int
+
+    func toDomain() -> Pagination {
+        return Pagination(
+            total: total,
+            limit: limit,
+            currentPage: currentPage,
+            totalPages: totalPages
         )
     }
 }
