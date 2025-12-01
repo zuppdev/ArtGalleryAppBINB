@@ -1,5 +1,22 @@
 import SwiftUI
 
+
+struct JustifiedText: UIViewRepresentable {
+    var text: String
+    
+    func makeUIView(context: Context) -> UITextView {
+        let textView = UITextView()
+        textView.text = text
+        textView.textAlignment = .justified
+        textView.font = .systemFont(ofSize: 18)
+        
+        return textView
+    }
+    
+    func updateUIView(_ uiView: UITextView, context: Context) {
+        
+    }
+}
 struct ArtworkDetailView: View {
     let artworkId: Int
     @StateObject private var viewModel = ArtworkDetailViewModel()
@@ -19,6 +36,8 @@ struct ArtworkDetailView: View {
                         Image(uiImage: image)
                             .resizable()
                             .scaledToFit()
+                            .cornerRadius(12)
+                            .padding(.horizontal)
                             .onTapGesture {
                                 showFullScreen = true
                             }
@@ -26,6 +45,8 @@ struct ArtworkDetailView: View {
                         Rectangle()
                             .fill(Color.gray.opacity(0.3))
                             .aspectRatio(1.5, contentMode: .fit)
+                            .cornerRadius(12)
+                            .padding(.horizontal)
                             .overlay(
                                 VStack {
                                     ProgressView()
@@ -39,6 +60,8 @@ struct ArtworkDetailView: View {
                         Rectangle()
                             .fill(Color.gray.opacity(0.3))
                             .aspectRatio(1.5, contentMode: .fit)
+                            .cornerRadius(12)
+                            .padding(.horizontal)
                             .overlay(
                                 VStack(spacing: 12) {
                                     Image(systemName: "photo.fill")
@@ -59,6 +82,8 @@ struct ArtworkDetailView: View {
                         Rectangle()
                             .fill(Color.gray.opacity(0.3))
                             .aspectRatio(1.5, contentMode: .fit)
+                            .cornerRadius(12)
+                            .padding(.horizontal)
                     }
                 }
                 
@@ -95,8 +120,15 @@ struct ArtworkDetailView: View {
                                 .font(.headline)
                                 .padding(.top)
                             
-                            Text(description)
+       
+                            Text(
+                                JustifiedText(text: description)
+                                .htmlToPlainText()
                                 .font(.body)
+                                .lineSpacing(4)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .multilineTextAlignment(.leading)
+                            
                         }
                     }
                     .padding()

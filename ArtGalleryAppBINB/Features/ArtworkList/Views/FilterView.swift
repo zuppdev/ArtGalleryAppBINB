@@ -2,8 +2,8 @@ import SwiftUI
 
 struct FilterView: View {
     @Environment(\.dismiss) var dismiss
-    @State private var startYear = 1800
-    @State private var endYear = 2024
+    @State private var startYear = "1800"
+    @State private var endYear = "2024"
     
     let onApply: (Int, Int) -> Void
     
@@ -11,13 +11,26 @@ struct FilterView: View {
         NavigationView {
             Form {
                 Section("Year Range") {
-                    Stepper("Start Year: \(startYear)", value: $startYear, in: 1000...2024)
-                    Stepper("End Year: \(endYear)", value: $endYear, in: 1000...2024)
+                    HStack {
+                        Text("Start Year:")
+                        TextField("Start Year", text: $startYear)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    
+                    HStack {
+                        Text("End Year:")
+                        TextField("End Year", text: $endYear)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                    }
                 }
                 
                 Section {
                     Button("Apply Filter") {
-                        onApply(startYear, endYear)
+                        let start = Int(startYear) ?? 1800
+                        let end = Int(endYear) ?? 2024
+                        onApply(start, end)
                         dismiss()
                     }
                     .frame(maxWidth: .infinity)
